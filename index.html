@@ -32,53 +32,67 @@
       height: 60px;
       background-size: cover;
       border: 1px solid #333;
-      transition: transform 0.2s ease;
     }
-    #gameOver {
+    #gameOver, #nextLevel {
       display: none;
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: #800;
+      background: #222;
       padding: 20px;
       border-radius: 10px;
       text-align: center;
+      z-index: 10;
     }
-    #gameOver button {
+    button {
       margin-top: 10px;
       padding: 10px 20px;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
   <div id="info">
     <h1>💪 MuscleFactory Match-3</h1>
-    <p>Score: <span id="score">0</span> | Moves Left: <span id="moves">20</span></p>
+    <p>Score: <span id="score">0</span> |
+       Moves Left: <span id="moves">20</span> |
+       Dumbbells: <span id="collected">0</span>/<span id="goal">5</span></p>
   </div>
   <div id="game"></div>
-  <div id="gameOver">
-    <p>💀 Game Over</p>
-    <button onclick="restart()">Restart Game</button>
+
+  <div id="nextLevel">
+    <h2>🎉 Level Complete!</h2>
+    <button onclick="nextLevel()">Next Level</button>
   </div>
 
-  <audio id="matchSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c106c68b67.mp3?filename=correct-2-46134.mp3"></audio>
-  <audio id="gameOverSound" src="https://cdn.pixabay.com/download/audio/2021/11/15/audio_e01b6c40e0.mp3?filename=negative_beeps-6008.mp3"></audio>
+  <div id="gameOver">
+    <h2>💀 Game Over</h2>
+    <button onclick="restart()">Try Again</button>
+  </div>
+
+  <audio id="matchSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c106c68b67.mp3"></audio>
+  <audio id="gameOverSound" src="https://cdn.pixabay.com/download/audio/2021/11/15/audio_e01b6c40e0.mp3"></audio>
 
   <script>
     const game = document.getElementById("game");
     const scoreDisplay = document.getElementById("score");
     const movesDisplay = document.getElementById("moves");
-    const gameOverBox = document.getElementById("gameOver");
+    const collectedDisplay = document.getElementById("collected");
+    const goalDisplay = document.getElementById("goal");
+
     const matchSound = document.getElementById("matchSound");
     const gameOverSound = document.getElementById("gameOverSound");
 
+    const nextLevelBox = document.getElementById("nextLevel");
+    const gameOverBox = document.getElementById("gameOver");
+
     const rows = 6, cols = 6;
     const images = ["dumbbell.png", "protein.png", "kettlebell.png", "shoe.png", "treadmill.png", "plate.png"];
+    let goalItem = "dumbbell.png";
 
     let tiles = [];
-    let score = 0;
-    let moves = 20;
+    let score = 0, moves = 20, collected = 0, goal = 5, level = 1;
     let first = null;
 
     function randImg() {
@@ -93,8 +107,8 @@
         tile.classList.add("tile");
         const img = randImg();
         tile.style.backgroundImage = `url(${img})`;
-        tile.setAttribute("data-img", img);
-        tile.setAttribute("data-index", i);
+        tile.dataset.img = img;
+        tile.dataset.index = i;
         tile.addEventListener("click", () => handleClick(tile));
         game.appendChild(tile);
         tiles.push(tile);
@@ -102,7 +116,7 @@
     }
 
     function handleClick(tile) {
-      if (moves <= 0) return;
+      if (moves <= 0 || nextLevelBox.style.display === "block") return;
       if (!first) {
         first = tile;
         tile.style.border = "2px solid yellow";
@@ -116,15 +130,23 @@
           setTimeout(() => {
             if (clearMatches()) {
               refill();
-              let loop = setInterval(() => {
+              let repeat = setInterval(() => {
                 if (!clearMatches()) {
-                  clearInterval(loop);
+                  clearInterval(repeat);
+                  if (collected >= goal) {
+                    nextLevelBox.style.display = "block";
+                  } else if (moves <= 0) {
+                    gameOverSound.play();
+                    gameOverBox.style.display = "block";
+                  }
                 } else {
                   refill();
                 }
-              }, 300);
+              }, 400);
+            } else if (moves <= 0 && collected < goal) {
+              gameOverSound.play();
+              gameOverBox.style.display = "block";
             }
-            if (moves <= 0) setTimeout(showGameOver, 700);
           }, 300);
         }
         first.style.border = "1px solid #333";
@@ -171,6 +193,8 @@
       }
 
       matched.forEach(i => {
+        const img = tiles[i].dataset.img;
+        if (img === goalItem) collected++;
         tiles[i].dataset.img = "";
         tiles[i].style.backgroundImage = "none";
       });
@@ -179,6 +203,7 @@
         matchSound.play();
         score += matched.size * 10;
         scoreDisplay.textContent = score;
+        collectedDisplay.textContent = collected;
         return true;
       }
       return false;
@@ -207,17 +232,31 @@
       }
     }
 
-    function showGameOver() {
-      gameOverSound.play();
-      gameOverBox.style.display = "block";
+    function nextLevel() {
+      nextLevelBox.style.display = "none";
+      level++;
+      goal += 3;
+      moves = 20 + level * 2;
+      collected = 0;
+      score = 0;
+      collectedDisplay.textContent = collected;
+      goalDisplay.textContent = goal;
+      scoreDisplay.textContent = score;
+      movesDisplay.textContent = moves;
+      createBoard();
     }
 
     function restart() {
       gameOverBox.style.display = "none";
       score = 0;
       moves = 20;
+      collected = 0;
+      goal = 5;
+      level = 1;
       scoreDisplay.textContent = score;
       movesDisplay.textContent = moves;
+      collectedDisplay.textContent = collected;
+      goalDisplay.textContent = goal;
       createBoard();
     }
 
