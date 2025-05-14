@@ -43,6 +43,21 @@
         opacity: 0;
       }
     }
+    #gameOver {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #800;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    #gameOver button {
+      margin-top: 10px;
+      padding: 10px 20px;
+    }
   </style>
 </head>
 <body>
@@ -51,11 +66,16 @@
     <p>Score: <span id="score">0</span> | Moves Left: <span id="moves">20</span></p>
   </div>
   <div id="game"></div>
+  <div id="gameOver">
+    <p>💀 Game Over</p>
+    <button onclick="restart()">Restart Game</button>
+  </div>
 
   <script>
     const game = document.getElementById("game");
     const scoreDisplay = document.getElementById("score");
     const movesDisplay = document.getElementById("moves");
+    const gameOverBox = document.getElementById("gameOver");
 
     const rows = 6, cols = 6;
     const images = ["dumbbell.png", "protein.png", "kettlebell.png", "shoe.png", "treadmill.png", "plate.png"];
@@ -99,8 +119,9 @@
           movesDisplay.textContent = moves;
           setTimeout(() => {
             clearMatches();
-            refill();
+            setTimeout(refill, 300);
           }, 300);
+          if (moves <= 0) setTimeout(showGameOver, 700);
         }
         first.style.border = "1px solid #333";
         first = null;
@@ -176,6 +197,19 @@
           }
         }
       }
+    }
+
+    function showGameOver() {
+      gameOverBox.style.display = "block";
+    }
+
+    function restart() {
+      gameOverBox.style.display = "none";
+      score = 0;
+      moves = 20;
+      scoreDisplay.textContent = score;
+      movesDisplay.textContent = moves;
+      createBoard();
     }
 
     createBoard();
